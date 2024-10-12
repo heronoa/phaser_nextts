@@ -7,6 +7,9 @@ import {
     EnemiesMenu,
     Message,
     Menu,
+    SpellMenu,
+    ConfirmMenu,
+    ItemMenu,
 } from "../Entities/GameEntities";
 
 export class UIScene extends Scene {
@@ -15,7 +18,11 @@ export class UIScene extends Scene {
     heroesMenu: HeroesMenu;
     actionsMenu: ActionsMenu;
     enemiesMenu: EnemiesMenu;
+    spellMenu: SpellMenu;
+    itemMenu: ItemMenu;
+    confirmMenu: ConfirmMenu;
     currentMenu: Menu | null;
+    previousMenu: Menu | null;
     battleScene: BattleScene;
     message: Message;
     constructor() {
@@ -59,47 +66,81 @@ export class UIScene extends Scene {
 
         this.battleScene = this.scene.get("BattleScene") as BattleScene;
 
-        this.remapHeroes();
-        this.remapEnemies();
-
+        // listen for keyboard events
         if (this.input.keyboard)
             this.input.keyboard.on("keydown", this.onKeyInput, this);
 
         this.input.on("pointerdown", this.handleClick, this);
         this.input.on("pointermove", this.handleSelection, this);
 
+        //
+
         // if (this.input.mousePointer)
         //     this.input.mousePointer.  .onMouseDown((evt: any) => console.log({ evt }));
+        // this.battleScene.events.on("PlayerSelect", this.onPlayerSelect, this);
+
+        // this.events.on("SelectEnemies", this.onSelectEnemies, this);
+        // this.events.on("SelectSpell", this.onSelectSpell, this);
+        // this.events.on("SelectItem", this.onSelectItem, this);
+        // this.events.on("ConfirmRun", this.onConfirmRun, this);
+        // this.events.on("BackMenu", this.onConfirmBack, this);
+
+        // this.events.on("Enemy", this.onEnemy, this);
+
+        // this.message = new Message(this, this.battleScene.events);
+        // this.add.existing(this.message);
+
+        // this.battleScene.nextTurn();
+
+        //
+
+        // when its player cunit turn to move
         this.battleScene.events.on("PlayerSelect", this.onPlayerSelect, this);
 
-        this.events.on("SelectEnemies", this.onSelectEnemies, this);
+        // when the action on the menu is selected
+        // for now we have only one action so we dont send and action id
+        this.events.on("SelectedAction", this.onSelectedAction, this);
 
+        // an enemy is selected
         this.events.on("Enemy", this.onEnemy, this);
 
+        // when the scene receives wake event
+        this.sys.events.on("wake", this.createMenu, this);
+
+        // the message describing the current action
         this.message = new Message(this, this.battleScene.events);
         this.add.existing(this.message);
 
-        this.battleScene.nextTurn();
+        this.createMenu();
 
         EventBus.emit("current-scene-ready", this);
+    }
+
+    createMenu() {
+        // map hero menu items to heroes
+        this.remapHeroes();
+        // map enemies menu items to enemies
+        this.remapEnemies();
+        // first move
+        this.battleScene.nextTurn();
     }
 
     handleClick(m: any) {
         const menu = this.currentMenu;
 
         if (menu !== null) {
-            console.log("HELLO WORLD", { x: m.x, y: m.y, menu });
+            // console.log("HELLO WORLD", { x: m.x, y: m.y, menu });
 
             const len = menu.length;
 
             const w = 55;
-            const h = 15 * len;
+            const h = 17 * len;
+
+            console.log({ item: menu.menuItemIndex });
 
             if (
-                m.x > menu.x &&
-                menu.x + w &&
-                m.y > menu.y &&
-                m.y < menu.y + h
+                menu.menuItemIndex !== undefined &&
+                menu.menuItems[menu.menuItemIndex].active
             ) {
                 menu.confirm();
             }
@@ -113,31 +154,65 @@ export class UIScene extends Scene {
         if (!menu) return;
 
         const len = menu.length;
-        const itemH = menu?.menuItems?.[0].height || 0
+        const itemH = menu?.menuItems?.[0].height + 10 || 0;
+        const itemW = 40;
 
-        if (m.x > menu.x && m.x < menu.x + 55) {
-            if (m.y > menu.y && m.y < menu.y + itemH && len > 0) {
-                console.log("HELLO WORLD 1", { x: m.x, y: m.y, menu });
+        // console.log({ x: m.x, y: m.y, mx: menu.x, my: menu.y, itemH, itemW });
+
+        if (m.x > menu.x + 40 && m.x < menu.x + 100 && menu.backButton) {
+            if (m.y > menu.y && m.y < menu.y + 100 && menu.backButton) {
+                // console.log("trigged", {
+                //     x: m.x,
+                //     y: m.y,
+                //     mx: menu.x,
+                //     my: menu.y,
+                //     itemH,
+                //     itemW,
+                // });
 
                 menu.select(0);
                 return;
             }
+        }
+
+        if (m.x > menu.x && m.x < menu.x + itemW) {
+            if (m.y > menu.y && m.y < menu.y + itemH && len > 0) {
+                // console.log("HELLO WORLD 1", { x: m.x, y: m.y, menu });
+                const selectionIndex = menu.backButton ? 1 : 0;
+
+                menu.select(selectionIndex);
+                return;
+            }
             if (m.y > menu.y + itemH && m.y < menu.y + 2 * itemH && len > 1) {
-                console.log("HELLO WORLD 2", { x: m.x, y: m.y, menu });
+                // console.log("HELLO WORLD 2", { x: m.x, y: m.y, menu });
 
-                menu.select(1);
+                const selectionIndex = menu.backButton ? 2 : 1;
+
+                menu.select(selectionIndex);
                 return;
             }
-            if (m.y > menu.y + 2 * itemH && m.y < menu.y + 3 * itemH && len > 2) {
-                console.log("HELLO WORLD 3", { x: m.x, y: m.y, menu });
+            if (
+                m.y > menu.y + 2 * itemH &&
+                m.y < menu.y + 3 * itemH &&
+                len > 2
+            ) {
+                // console.log("HELLO WORLD 3", { x: m.x, y: m.y, menu });
 
-                menu.select(2);
+                const selectionIndex = menu.backButton ? 3 : 2;
+
+                menu.select(selectionIndex);
                 return;
             }
-            if (m.y > menu.y + 4 * itemH && m.y < menu.y + 5 * itemH && len > 3) {
-                console.log("HELLO WORLD 4", { x: m.x, y: m.y, menu });
+            if (
+                m.y > menu.y + 4 * itemH &&
+                m.y < menu.y + 5 * itemH &&
+                len > 3
+            ) {
+                // console.log("HELLO WORLD 4", { x: m.x, y: m.y, menu });
 
-                menu.select(3);
+                const selectionIndex = menu.backButton ? 4 : 3;
+
+                menu.select(selectionIndex);
                 return;
             }
         }
@@ -155,28 +230,47 @@ export class UIScene extends Scene {
         this.actionsMenu.select(0);
         this.currentMenu = this.actionsMenu;
     }
-    onSelectEnemies() {
+    onSelectedAction() {
+        this.previousMenu = this.currentMenu;
         this.currentMenu = this.enemiesMenu;
         this.enemiesMenu.select(0);
     }
 
+    onSelectSpell() {
+        // const currentHeroSpells =
+        //     this?.heroesMenu.heroes || [];
+        // if (currentHeroSpells.length > 0) this.previousMenu = this.currentMenu;
+        // this.currentMenu?.remap(currentHeroSpells, true);
+        // this.currentMenu = this.spellMenu;
+        // this.enemiesMenu.select(0);
+    }
+    onSelectItem() {
+        this.previousMenu = this.currentMenu;
+
+        this.currentMenu = this.itemMenu;
+        this.enemiesMenu.select(0);
+    }
+    onConfirmRun() {
+        this.previousMenu = this.currentMenu;
+
+        this.currentMenu = this.confirmMenu;
+        this.enemiesMenu.select(0);
+    }
+
+    onConfirmBack() {
+        if (this.previousMenu !== null) this.currentMenu = this.previousMenu;
+    }
+
     onKeyInput(event: KeyboardEvent) {
-        if (this.currentMenu) {
-            if (Phaser.Input.MOUSE_DOWN)
-                if (event.code === "ArrowUp") {
-                    this.currentMenu.moveSelectionUp();
-                } else if (event.code === "ArrowDown") {
-                    this.currentMenu.moveSelectionDown();
-                } else if (
-                    event.code === "ArrowRight" ||
-                    event.code === "Shift"
-                ) {
-                } else if (
-                    event.code === "Space" ||
-                    event.code === "ArrowLeft"
-                ) {
-                    this.currentMenu.confirm();
-                }
+        if (this.currentMenu && this.currentMenu.selected) {
+            if (event.code === "ArrowUp") {
+                this.currentMenu.moveSelectionUp();
+            } else if (event.code === "ArrowDown") {
+                this.currentMenu.moveSelectionDown();
+            } else if (event.code === "ArrowRight" || event.code === "Shift") {
+            } else if (event.code === "Space" || event.code === "ArrowLeft") {
+                this.currentMenu.confirm();
+            }
         }
     }
 }

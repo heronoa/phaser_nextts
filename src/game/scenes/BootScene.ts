@@ -6,6 +6,6 @@ export class BootScene extends Scene {
     }
 
     create() {
-        this.scene.start("BattleScene");
+        this.scene.start("WorldScene");
     }
 }

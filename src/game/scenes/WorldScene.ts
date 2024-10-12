@@ -89,30 +89,41 @@ export class WorldScene extends Scene {
         this.cursors = this?.input?.keyboard?.createCursorKeys();
 
         // where the enemies will be
-        this.spawns = this.physics.add.group({
-            classType: Phaser.GameObjects.Zone,
-        });
-        for (var i = 0; i < 30; i++) {
-            var x = Phaser.Math.RND.between(0, this.physics.world.bounds.width);
-            var y = Phaser.Math.RND.between(
-                0,
-                this.physics.world.bounds.height
-            );
-            // parameters are x, y, width, height
-            this.spawns.create(x, y, 20, 20);
-        }
+        // this.spawns = this.physics.add.group({
+        //     classType: Phaser.GameObjects.Zone,
+        // });
+        // for (var i = 0; i < 30; i++) {
+        //     var x = Phaser.Math.RND.between(0, this.physics.world.bounds.width);
+        //     var y = Phaser.Math.RND.between(
+        //         0,
+        //         this.physics.world.bounds.height
+        //     );
+        //     // parameters are x, y, width, height
+        //     this.spawns.create(x, y, 20, 20);
+        // }
         // add collider
-        this.physics.add.overlap(
-            this.player,
-            this.spawns,
-            this.onMeetEnemy,
-            undefined,
-            this
-        );
+        // this.physics.add.overlap(
+        //     this.player,
+        //     this.spawns,
+        //     this.onMeetEnemy,
+        //     undefined,
+        //     this
+        // );
+
+        this.sys.events.on("wake", this.wake, this);
 
         EventBus.emit("current-scene-ready", this);
     }
+
+    wake() {
+        this.cursors.left.reset();
+        this.cursors.right.reset();
+        this.cursors.up.reset();
+        this.cursors.down.reset();
+    }
+
     onMeetEnemy(player: any, zone: any) {
+        console.log("OVELAP");
         // we move the zone to some other location
         zone.x = Phaser.Math.RND.between(0, this.physics.world.bounds.width);
         zone.y = Phaser.Math.RND.between(0, this.physics.world.bounds.height);
@@ -120,9 +131,12 @@ export class WorldScene extends Scene {
         // shake the world
         this.cameras.main.shake(300);
 
+        // this.input.stopPropagation();
+
         // start battle
-        this.scene.start("BattleScene");
+        // this.scene.switch("BattleScene");
     }
+
     update(time: any, delta: any) {
         //    this.controls.update(delta);
 

@@ -19,6 +19,10 @@ var BootScene = new Phaser.Class({
         // map in json format
         this.load.tilemapTiledJSON('map', 'assets/map/map.json');
         
+        // enemies
+        this.load.image("dragonblue", "assets/dragonblue.png");
+        this.load.image("dragonorrange", "assets/dragonorrange.png");
+        
         // our two characters
         this.load.spritesheet('player', 'assets/RPG_assets.png', { frameWidth: 16, frameHeight: 16 });
     },
@@ -118,6 +122,14 @@ var WorldScene = new Phaser.Class({
         }        
         // add collider
         this.physics.add.overlap(this.player, this.spawns, this.onMeetEnemy, false, this);
+        // we listen for 'wake' event
+        this.sys.events.on('wake', this.wake, this);
+    },
+    wake: function() {
+        this.cursors.left.reset();
+        this.cursors.right.reset();
+        this.cursors.up.reset();
+        this.cursors.down.reset();
     },
     onMeetEnemy: function(player, zone) {        
         // we move the zone to some other location
@@ -127,14 +139,14 @@ var WorldScene = new Phaser.Class({
         // shake the world
         this.cameras.main.shake(300);
         
+        this.input.stopPropagation();
         // start battle 
+        this.scene.switch('BattleScene');                
     },
     update: function (time, delta)
-    {
-    //    this.controls.update(delta);
-    
+    {             
         this.player.body.setVelocity(0);
-
+        
         // Horizontal movement
         if (this.cursors.left.isDown)
         {
@@ -144,7 +156,6 @@ var WorldScene = new Phaser.Class({
         {
             this.player.body.setVelocityX(80);
         }
-
         // Vertical movement
         if (this.cursors.up.isDown)
         {
@@ -182,23 +193,3 @@ var WorldScene = new Phaser.Class({
     
 });
 
-var config = {
-    type: Phaser.AUTO,
-    parent: 'content',
-    width: 320,
-    height: 240,
-    zoom: 2,
-    pixelArt: true,
-    physics: {
-        default: 'arcade',
-        arcade: {
-            gravity: { y: 0 },
-            debug: false // set to true to view zones
-        }
-    },
-    scene: [
-        BootScene,
-        WorldScene
-    ]
-};
-var game = new Phaser.Game(config);
